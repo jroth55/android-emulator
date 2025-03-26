@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  emulator-desktop:
+    # Build the image from the 'emulator-desktop' directory
+    build:
+      context: ./emulator-desktop
+      args:
+        # These can be overridden in Coolify build settings if needed
+        LOCAL_USER_ID: ${LOCAL_USER_ID:-1000}
+        LOCAL_GROUP_ID: ${LOCAL_GROUP_ID:-1000}
+    container_name: android_rdp_desktop_${COOLIFY_SERVICE_ID:-local}
+    restart: unless-stopped
+    # !! CRITICAL REQUIREMENT for Emulator performance !!
+    # Needs KVM access from the HOST. Coolify *MUST* allow this device mapping.
+    devices:
+      - /dev/kvm:/dev/kvm
+      - /dev/snd:/dev/snd # Optional: for sound passthrough
+      - /dev/dri:/dev/dri # Optional: needed if trying host GPU passthrough (Very Advanced)
+    # Alternatively, if Coolify allows it and device mapping fails:
+    # privileged: true
+    volumes:
+      # Mount the entire home directory for full user persistence
+      - android_home_data:/home/androiduser
+    environment:
+      # Pass passwords from .env/Coolify Secrets
+      RDP_USER_PASSWORD: ${RDP_USER_PASSWORD}
+      ROOT_PASSWORD: ${ROOT_PASSWORD} # Added root password env var
+    # --- PORT MAPPING ---
+    # Expose the internal RDP port (3389). Coolify manages mapping to host port.
+    ports:
+      - "3389"
+
+volumes:
+  android_home_data:
